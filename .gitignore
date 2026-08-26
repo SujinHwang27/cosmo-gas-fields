@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+uv.lock
+
+# Tooling
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.DS_Store
+._*
+
+# Experiment outputs
+mlruns/
+mlflow.db
+*.csv
+runs/
+artifacts/
+*.pt
+*.npy
+*.npz
+
+# Secrets
+.env
+.env.*
