@@ -136,6 +136,33 @@ trained with direct supervision on truth cubes, recovers the smoothed density on
 held-out slab far above the phase-randomized chance floor. Numbers, per-variant tables,
 and figures will be added here once the review period ends.
 
+## Tech stack of the full research pipeline
+
+This release runs its demo and tests on CPU, but the original research code behind it
+ran as a full training-and-evaluation pipeline:
+
+- **PyTorch (CUDA)** end to end: the neural field, the differentiable absorption
+  renderer, the 3D U-Net, and every loss are torch modules; production trainings ran as
+  single-GPU jobs on NVIDIA A30 (and H100) nodes, roughly 7 GPU-hours per 50,000-step
+  run per simulation box. Apple-silicon MPS and CPU were used for local smokes.
+- **SLURM on an institutional HPC cluster** for dispatch: sbatch scripts with in-script
+  provenance guards (the job aborts unless the checked-out commit, data checksums, and
+  required CLI flags match the registered configuration), a copy-in / compute /
+  copy-out / clean-up scratch discipline, and an overfit-one-batch plus step-100
+  contract test gating every submission (`mlops/contract_tests.py`).
+- **MLflow** for experiment tracking: a self-hosted tracking server backed by SQLite
+  with S3 artifact storage; cluster jobs log to a local `file://` store that is shipped
+  home and replayed into the tracker with per-step metric history intact
+  (`mlops/mlflow_replay.py`); every run degrades gracefully to a CSV mirror when the
+  tracker is unreachable (`mlops/tracker.py`).
+- **DVC with an S3 remote (AWS)** for data and model versioning: multi-gigabyte
+  simulation inputs, truth cubes, and checkpoints are content-addressed, and evaluation
+  scripts assert pinned checksums before scoring (`mlops/identity_pin.py`) so a stale
+  or swapped file aborts the run instead of biasing a number.
+- **uv** for locked, reproducible Python environments; **pytest** for the unit and
+  contract tests; **Git** with per-experiment branches and an append-only decision
+  ledger as the research record.
+
 ## Install and run
 
 ```bash
